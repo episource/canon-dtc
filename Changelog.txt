@@ -1,3 +1,14 @@
+Version 1.0.3
+	- Der Parameter -NoUpscale (--NoUpscale) wird nun korrekt eingelesen (die Funktion kann nun auch deaktiviert werden)
+
+Version 1.0.2
+	- Das Arbeitsverzeichnis muss nicht mehr der Ordner sein, in dem auch das Skript liegt
+	- Parameter -format (--format) in -size (--size) umbenannt
+	- AutoSize-Funktion hinzugefügt
+	- Parameter -AutoSize (--AutoSize) hinzugefügt
+	- Parameter -NoUpscale (--NoUpscale) hinzugefügt
+	- Hilfetext aktualisiert
+
 Version 1.0.1:
 	- Unterstützung für die AutoRotate-Funktion der Canon-Kameras hinzugefügt.
 	- Die ParseArguments-Methode verwendet nun die Switch-Syntax

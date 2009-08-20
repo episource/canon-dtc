@@ -250,6 +250,14 @@ function ParseArguments([array]$arguments)
 				$i = $arrValue[1];
 			}
 
+			"noupscale"
+			{
+				[array]$arrValue = ParseBooleanArgumentValue;
+				
+				$script:bolNoUpscale = $arrValue[0];
+				$i = $arrValue[1];
+			}
+
 			"canvas"
 			{
 				$i++;

@@ -1,0 +1,6 @@
+Version 1.0.1:
+	- Unterstützung für die AutoRotate-Funktion der Canon-Kameras hinzugefügt.
+	- Die ParseArguments-Methode verwendet nun die Switch-Syntax
+
+Version 1.0.0:
+	- Ursprüngliche Version.

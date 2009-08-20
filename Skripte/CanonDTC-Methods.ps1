@@ -9,257 +9,294 @@ function ParseArguments([array]$arguments)
 
 	while ($i -lt $arguments.length)
 	{
-		$argument = ([string]$arguments[$i]).ToLower();
+		$argument = ([string]$arguments[$i]).ToLower().TrimStart("-");
 
-		if ( ($argument -eq "-help") -or ($argument -eq "--help") )
+		switch ($argument)
 		{
-			[System.IO.StreamReader]$srHelp = $();
-			
-			# Datei im Falle eines Fehlers freigeben
-			trap
+			"help"
 			{
-				if ($srHelp -ne $())
+				[System.IO.StreamReader]$srHelp = $();
+
+				# Datei im Falle eines Fehlers freigeben
+				trap
 				{
-					$srHelp.Dispose();
-				}
-			}
-			
-			# Leerzeile vor dem Hilfetext
-			"";
-
-			# Hilfetext laden und zeilenweise ausgeben. Zulange Zeilen werden in der nächsten Zeile mit gleichbleibender Einrückung ausgegeben.
-			$srHelp = new-object "System.IO.StreamReader" "./CanonDTC-Help.txt";
-
-			[string]$strLine = $();
-			[int]$intLineLength = [System.Console]::BufferWidth - 1;
-
-			while ( ($strLine = $srHelp.ReadLine()) -ne $() )
-			{
-				if ($strLine.Length -le $intLineLength)
-				{
-					$strLine;
-					continue;
-				}
-
-				# Anzahl der Leerzeichen bestimmen
-				[string]$strLeadingSpaces = "";
-
-				for ($i = 0; $i -lt $strLine.Length; $i++)
-				{
-					if ($strLine[$i] -ne " ")
+					if ($srHelp -ne $())
 					{
-						break;
+						$srHelp.Dispose();
+					}
+				}
+
+				# Leerzeile vor dem Hilfetext
+				"";
+
+				# Hilfetext laden und zeilenweise ausgeben. Zulange Zeilen werden in der nächsten Zeile mit gleichbleibender Einrückung ausgegeben.
+				$srHelp = new-object "System.IO.StreamReader" "./CanonDTC-Help.txt";
+
+				[string]$strLine = $();
+				[int]$intLineLength = [System.Console]::BufferWidth - 1;
+
+				while ( ($strLine = $srHelp.ReadLine()) -ne $() )
+				{
+					if ($strLine.Length -le $intLineLength)
+					{
+						$strLine;
+						continue;
 					}
 
-					$strLeadingSpaces += " ";
-				}
+					# Anzahl der Leerzeichen bestimmen
+					[string]$strLeadingSpaces = "";
 
-				# zeilenweise Ausgabe
-				[int]$intPos = $strLeadingSpaces.Length;
-				[int]$intSubstringLength = $intLineLength - $strLeadingSpaces.Length;
-
-				while ($intPos -lt $strLine.Length)
-				{
-					if ($intSubstringLength -gt $strLine.Length - $intPos)
+					for ($i = 0; $i -lt $strLine.Length; $i++)
 					{
-						$strLeadingSpaces + $strLine.Substring($intPos);
-					}
-					else
-					{
-						$strLeadingSpaces + $strLine.Substring($intPos, $intLineLength - $strLeadingSpaces.Length);
-					}
-					
-					$intPos = $intPos + $intSubstringLength;
-				}
-			}
+						if ($strLine[$i] -ne " ")
+						{
+							break;
+						}
 
-			# Datei freigeben
-			$srHelp.Dispose();
-			
-			# Leerzeile nach dem Hilfetext
-			"";
-
-			# Script beenden
-			exit;
-		}
-		elseif ( ($argument -eq "-source") -or ($argument -eq "--source") )
-		{
-			$i++;
-
-			if ($i -ge $arguments.length)
-			{
-				throw ("Dem Parameter " + $arguments[$i - 1] + " muss die Angabe eines Quellverzeichnisses folgen!");
-			}
-
-			if ( -not [System.IO.Directory]::Exists($arguments[$i]) )
-			{
-				throw ("Kein gültiges Quellverzeichnis: " + $arguments[$i]);
-			}
-			
-			$script:strSourceFolderPath = $arguments[$i];
-		}
-		elseif ( ($argument -eq "-target") -or ($argument -eq "--target") )
-		{
-			$i++;
-			
-			if ($i -ge $arguments.length)
-			{
-				throw ("Dem Parameter " + $arguments[$i - 1] + " muss die Angabe eines Zielverzeichnisses folgen!");
-			}
-			
-			if ( -not [System.IO.Directory]::Exists($arguments[$i]) )
-			{
-				"Zielverzeichnis nicht vorhanden. Es wird automatisch angelegt.";
-			}
-			
-			$script:strTargetFolderPath = $arguments[$i];
-		}
-		elseif( ($argument -eq "-exiftool") -or ($argument -eq "--exiftool") )
-		{
-			$i++;
-			
-			if ($i -ge $arguments.length)
-			{
-				throw ("Dem Parameter " + $arguments[$i -1] + " muss die Angabe des Pfades zu Phil Harveys Exiftool (EXE) folgen!");
-			}
-			
-			if ( -not [System.IO.File]::Exists($arguments[$i]) )
-			{
-				throw ("Keine gültige Dateiangabe: " + $arguments[$i]);
-			}
-			
-			if ( -not $arguments[$i].ToLower().EndsWith(".exe") )
-			{
-				throw ("Keine ausführbare Datei: " + $arguments[$i]);
-			}
-			
-			$script:strExiftoolPath = $arguments[$i];
-		}
-		elseif( ($argument -eq "-exiftemplate") -or ($argument -eq "--exiftemplate") )
-		{
-			$i++;
-			
-			if ($i -ge $arguments.length)
-			{
-				throw ("Dem Parameter " + $arguments[$i -1] + " muss die Angabe des Pfades zur Exif-Daten-Vorlage folgen!");
-			}
-			
-			if ( -not [System.IO.File]::Exists($arguments[$i]) )
-			{
-				throw ("Keine gültige Dateiangabe: " + $arguments[$i]);
-			}
-			
-			$script:strExifTemplatePath = $arguments[$i];
-		}
-		elseif( ($argument -eq "-format") -or ($argument -eq "--format") )
-		{
-			$i++;
-
-			if ($i -ge $arguments.length)
-			{
-				throw ("Dem Parameter " + $arguments[$i -1] + " muss eine Formatangabe folgen!");
-			}
-
-			$arrFormat = $arguments[$i].Split("xX");
-
-			if ( -not ( ($arrFormat.Length -eq 2) -and [Int32]::TryParse($arrFormat[0], [ref] $intWidth) -and [Int32]::TryParse($arrFormat[1], [ref] $intHeight) ) )
-			{
-				throw ($arguments[$i] + " ist keine gültige Formatangabe.");
-			}
-
-			if ( -not ( ($intWidth -eq 640 -and $intHeight -eq 480) -or ($intWidth -eq 1600 -and $intHeight -eq 1200) -or ($intWidth -eq 2048 -and $intHeight -eq 1536) -or ($intWidth -eq 2592 -and $intHeight -eq 1944) -or ($intWidth -eq 3072 -and $intHeight -eq 2304) ) )
-			{
-				throw ($arguments[$i] + " wird nicht unterstützt. Es sind nur die Modi 640x480, 1600x1200, 2048x1536, 2592x1944 und 3072x2304 möglich!");
-			}
-		}
-		elseif ( ($argument -eq "-canvas") -or ($argument -eq "--canvas") )
-		{
-			$i++;
-			
-			if ($i -ge $arguments.length)
-			{
-				throw ("Dem Parameter " + $arguments[$i -1] + " muss entweder eine Rahmenfarbe oder none folgen!");
-			}
-
-			if ($arguments[$i].ToLower() -eq "none")
-			{
-				$script:bolKeepAspectRatio = $false;
-			}
-			else
-			{
-				$bolKeepAspectRatio = $true;
-
-				if ($arguments[$i].StartsWith("#"))
-				{
-					# Folgendes Schema wird vorausgesetzt: #RRGGBB
-
-					if ($arguments[$i].Length -ne 7)
-					{
-						throw ("Ungültiger Farbcode: " + $arguments[$i]);
+						$strLeadingSpaces += " ";
 					}
 
-					[byte]$bRot = 0;
-					[byte]$bGruen = 0;
-					[byte]$bBlau = 0;
+					# zeilenweise Ausgabe
+					[int]$intPos = $strLeadingSpaces.Length;
+					[int]$intSubstringLength = $intLineLength - $strLeadingSpaces.Length;
 
-					if ( -not ( [Byte]::TryParse($arguments[$i].Substring(1,2), [System.Globalization.NumberStyles]::HexNumber, $(), [ref] $bRot) -and [Byte]::TryParse($arguments[$i].Substring(3,2), [System.Globalization.NumberStyles]::HexNumber, $(), [ref] $bGruen) -and [Byte]::TryParse($arguments[$i].Substring(5,2), [System.Globalization.NumberStyles]::HexNumber, $(), [ref] $bBlau) ) )
+					while ($intPos -lt $strLine.Length)
 					{
-						throw ("Ungültiger Farbcode: " + $arguments[$i]);
+						if ($intSubstringLength -gt $strLine.Length - $intPos)
+						{
+							$strLeadingSpaces + $strLine.Substring($intPos);
+						}
+						else
+						{
+							$strLeadingSpaces + $strLine.Substring($intPos, $intLineLength - $strLeadingSpaces.Length);
+						}
+
+						$intPos = $intPos + $intSubstringLength;
 					}
-					
-					$script:clrCanvasColor = [System.Drawing.Color]::FromArgb(255, $bRot, $bGruen, $bBlau);
 				}
-				else
-				{
-					$script:clrCanvasColor = [System.Drawing.Color]::FromName($arguments[$i]);
-				}
-			}
-		}
-		elseif ( ($argument -eq "-jpegquality") -or ($argument -eq "--jpegquality") )
-		{
-			$i++;
 
-			if ($i -ge $arguments.length)
-			{
-				throw ("Dem Parameter " + $arguments[$i -1] + " muss ein numerischer Wert zwischen 1 und 100 (einschließlich) folgen.");
+				# Datei freigeben
+				$srHelp.Dispose();
+
+				# Leerzeile nach dem Hilfetext
+				"";
+
+				# Script beenden
+				exit;
 			}
 			
-			[int]$intQuality = 0;
-
-			if ( (-not [Int32]::TryParse($arguments[$i], [ref] $intQuality)) -or ($intQuality -lt 1) -or ($intQuality -gt 100) )
-			{
-				throw ("Kein numerischer Wert zwischen 1 und 100 (einschließlich): " + $arguments[$i]);
-			}
-			
-			$script:intJpegQuality = $intQuality;
-		}
-		elseif ( ($argument -eq "-rename") -or ($argument -eq "--rename") )
-		{
-			if ( ($i + 1 -ge $arguments.Length) -or (($arguments[$i + 1].Length -gt 1) -and $arguments[$i + 1].StartsWith("-")) )
-			{
-				$script:bolRename = $true;
-			}
-			else
+			"source"
 			{
 				$i++;
 
-				if ( ($arguments[$i] -eq "0") -or ($arguments[$i] -eq "false") )
+				if ($i -ge $arguments.length)
 				{
-					$script:bolRename = $false;
+					throw ("Dem Parameter " + $arguments[$i - 1] + " muss die Angabe eines Quellverzeichnisses folgen!");
 				}
-				elseif ( ($arguments[$i] -eq "1") -or ($arguments[$i] -eq "true") )
+
+				if ( -not [System.IO.Directory]::Exists($arguments[$i]) )
+				{
+					throw ("Kein gültiges Quellverzeichnis: " + $arguments[$i]);
+				}
+
+				$script:strSourceFolderPath = $arguments[$i];
+			}
+
+			"target"
+			{
+				$i++;
+				
+				if ($i -ge $arguments.length)
+				{
+					throw ("Dem Parameter " + $arguments[$i - 1] + " muss die Angabe eines Zielverzeichnisses folgen!");
+				}
+				
+				if ( -not [System.IO.Directory]::Exists($arguments[$i]) )
+				{
+					"Zielverzeichnis nicht vorhanden. Es wird automatisch angelegt.";
+				}
+				
+				$script:strTargetFolderPath = $arguments[$i];
+			}
+			
+			"exiftool"
+			{
+				$i++;
+				
+				if ($i -ge $arguments.length)
+				{
+					throw ("Dem Parameter " + $arguments[$i -1] + " muss die Angabe des Pfades zu Phil Harveys Exiftool (EXE) folgen!");
+				}
+				
+				if ( -not [System.IO.File]::Exists($arguments[$i]) )
+				{
+					throw ("Keine gültige Dateiangabe: " + $arguments[$i]);
+				}
+				
+				if ( -not $arguments[$i].ToLower().EndsWith(".exe") )
+				{
+					throw ("Keine ausführbare Datei: " + $arguments[$i]);
+				}
+				
+				$script:strExiftoolPath = $arguments[$i];
+			}
+			
+			"exiftemplate"
+			{
+				$i++;
+				
+				if ($i -ge $arguments.length)
+				{
+					throw ("Dem Parameter " + $arguments[$i -1] + " muss die Angabe des Pfades zur Exif-Daten-Vorlage folgen!");
+				}
+				
+				if ( -not [System.IO.File]::Exists($arguments[$i]) )
+				{
+					throw ("Keine gültige Dateiangabe: " + $arguments[$i]);
+				}
+				
+				$script:strExifTemplatePath = $arguments[$i];
+			}
+			
+			"format"
+			{
+				$i++;
+	
+				if ($i -ge $arguments.length)
+				{
+					throw ("Dem Parameter " + $arguments[$i -1] + " muss eine Formatangabe folgen!");
+				}
+	
+				$arrFormat = $arguments[$i].Split("xX");
+	
+				if ( -not ( ($arrFormat.Length -eq 2) -and [Int32]::TryParse($arrFormat[0], [ref] $intWidth) -and [Int32]::TryParse($arrFormat[1], [ref] $intHeight) ) )
+				{
+					throw ($arguments[$i] + " ist keine gültige Formatangabe.");
+				}
+	
+				if ( -not ( ($intWidth -eq 640 -and $intHeight -eq 480) -or ($intWidth -eq 1600 -and $intHeight -eq 1200) -or ($intWidth -eq 2048 -and $intHeight -eq 1536) -or ($intWidth -eq 2592 -and $intHeight -eq 1944) -or ($intWidth -eq 3072 -and $intHeight -eq 2304) ) )
+				{
+					throw ($arguments[$i] + " wird nicht unterstützt. Es sind nur die Modi 640x480, 1600x1200, 2048x1536, 2592x1944 und 3072x2304 möglich!");
+				}
+			}
+			
+			"canvas"
+			{
+				$i++;
+				
+				if ($i -ge $arguments.length)
+				{
+					throw ("Dem Parameter " + $arguments[$i -1] + " muss entweder eine Rahmenfarbe oder none folgen!");
+				}
+	
+				if ($arguments[$i].ToLower() -eq "none")
+				{
+					$script:bolKeepAspectRatio = $false;
+				}
+				else
+				{
+					$bolKeepAspectRatio = $true;
+	
+					if ($arguments[$i].StartsWith("#"))
+					{
+						# Folgendes Schema wird vorausgesetzt: #RRGGBB
+	
+						if ($arguments[$i].Length -ne 7)
+						{
+							throw ("Ungültiger Farbcode: " + $arguments[$i]);
+						}
+	
+						[byte]$bRot = 0;
+						[byte]$bGruen = 0;
+						[byte]$bBlau = 0;
+	
+						if ( -not ( [Byte]::TryParse($arguments[$i].Substring(1,2), [System.Globalization.NumberStyles]::HexNumber, $(), [ref] $bRot) -and [Byte]::TryParse($arguments[$i].Substring(3,2), [System.Globalization.NumberStyles]::HexNumber, $(), [ref] $bGruen) -and [Byte]::TryParse($arguments[$i].Substring(5,2), [System.Globalization.NumberStyles]::HexNumber, $(), [ref] $bBlau) ) )
+						{
+							throw ("Ungültiger Farbcode: " + $arguments[$i]);
+						}
+						
+						$script:clrCanvasColor = [System.Drawing.Color]::FromArgb(255, $bRot, $bGruen, $bBlau);
+					}
+					else
+					{
+						$script:clrCanvasColor = [System.Drawing.Color]::FromName($arguments[$i]);
+					}
+				}
+			}
+			
+			"jpegquality"
+			{
+				$i++;
+	
+				if ($i -ge $arguments.length)
+				{
+					throw ("Dem Parameter " + $arguments[$i -1] + " muss ein numerischer Wert zwischen 1 und 100 (einschließlich) folgen.");
+				}
+				
+				[int]$intQuality = 0;
+	
+				if ( (-not [Int32]::TryParse($arguments[$i], [ref] $intQuality)) -or ($intQuality -lt 1) -or ($intQuality -gt 100) )
+				{
+					throw ("Kein numerischer Wert zwischen 1 und 100 (einschließlich): " + $arguments[$i]);
+				}
+				
+				$script:intJpegQuality = $intQuality;
+			}
+			
+			"rename"
+			{
+				if ( ($i + 1 -ge $arguments.Length) -or (($arguments[$i + 1].Length -gt 1) -and $arguments[$i + 1].StartsWith("-")) )
 				{
 					$script:bolRename = $true;
 				}
 				else
 				{
-					$i--;
+					$i++;
+	
+					if ( ($arguments[$i] -eq "0") -or ($arguments[$i] -eq "false") )
+					{
+						$script:bolRename = $false;
+					}
+					elseif ( ($arguments[$i] -eq "1") -or ($arguments[$i] -eq "true") )
+					{
+						$script:bolRename = $true;
+					}
+					else
+					{
+						$i--;
+					}
 				}
 			}
-		}
-		else
-		{
-			throw ("Nicht unterstützter Parameter: " + $arguments[$i]);
+			
+			"autorotate"
+			{
+				if ( ($i + 1 -ge $arguments.Length) -or (($arguments[$i + 1].Length -gt 1) -and $arguments[$i + 1].StartsWith("-")) )
+				{
+					$script:bolAutoRotate = $true;
+				}
+				else
+				{
+					$i++;
+	
+					if ( ($arguments[$i] -eq "0") -or ($arguments[$i] -eq "false") )
+					{
+						$script:bolAutoRotate = $false;
+					}
+					elseif ( ($arguments[$i] -eq "1") -or ($arguments[$i] -eq "true") )
+					{
+						$script:bolAutoRotate = $true;
+					}
+					else
+					{
+						$i--;
+					}
+				}
+			}
+	
+			default
+			{
+				throw ("Nicht unterstützter Parameter: " + $arguments[$i]);
+			}
 		}
 
 		$i++;
@@ -293,14 +330,21 @@ function ValidatePaths()
 #
 #	Scale
 #		Skaliert eine gegebene Image-Instanz entsprechend den gewünschten Werten.
-#		Gibt ein [System.Drawing.Image]-Objekt zurück.
+#		Gibt ein [System.Drawing.Image]-Objekt zurück. Wenn das Bild höher als breit ist, wird es um 90°
+#		im Uhrzeigersinn gedreht um das Zielformat optimal auszunutzen. Die Variable $bolRotate wird
+#		entsprechend gesetzt.
 #
 
 function Scale()
 {
 	Param ( [System.Drawing.Image]$imgImage, [int]$intNewWidth = $intWidth, [int]$intNewHeight = $intHeight, [int]$intDpi = 0 );
 
-
+	# Bild bei Bedarf drehen
+	if ($bolAutoRotate -and ($imgImage.Height -gt $imgImage.Width))
+	{
+		$imgImage.RotateFlip([System.Drawing.RotateFlipType]::Rotate90FlipNone);
+		$script:bolRotated = $true;
+	}
 
 	# Auflösung des Bildes festlegen
 
@@ -523,6 +567,10 @@ function UpdateExifData([string]$strSourceImagePath)
 	# Thumbnail hinzufügen
 	[string]$strFullThumbnailPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($strTempFolderPath, [System.IO.Path]::GetFileNameWithoutExtension($strSourceImagePath) + "-thumb.jpg"));
 	& $strExiftoolPath -overwrite_original "-ThumbnailImage<=$strFullThumbnailPath" "$strFullTargetPath" | out-null;
-	
-	#
+
+	# AutoRotate-Funktion der Kamera bei Bedarf aktivieren (Drehung um 270° im Uhrzeigersinn)
+	if ($bolRotated)
+	{
+		& $strExiftoolPath -overwrite_original "-IFD0:Orientation=Rotate 270 CW" "$strFullTargetPath" | out-null;
+	}
 }

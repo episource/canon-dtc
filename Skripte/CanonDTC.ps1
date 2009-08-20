@@ -11,6 +11,8 @@ set-psdebug -strict
 
 [string]$script:strTempFolderPath = "";			# temporäres Verzeichnis; wird automatisch angelegt und gelöscht
 
+[bool]$script:bolRotated = $false;					# Gibt an, ob das Bild beim letzten Skalierungsvorgang gedreht wurde (siehe Scale-Methode). In diesem Fall muss die AutoRotate-Funktion der Kamera aktiviert werden.
+
 
 # Verwendete Parameter-Variabeln
 
@@ -26,6 +28,7 @@ set-psdebug -strict
 
 [string]$script:strExifTemplatePath = "";		# Pfad zu der Exif-Daten-Vorlage
 
+[bool]$script:bolAutoRotate = $true					# Bestimmt ob die AutoRotate-Funktion der Kamera zum Darstellen von Hochformatbildern genutzt werden soll
 [bool]$script:bolKeepAspectRatio = $false;	# Legt fest, ob das Seitenverhältnis des ursprünglichen Bildes beibehalten wird. Auftretende Ränder werden mit der Farbe CanvasColor gefüllt. Die Farbangabe erfolgt entweder als Name aus der KnownColors Enumeration oder nach dem Schema #RRGGBB.
 [System.Drawing.Color]$Script:clrCanvasColor = [System.Drawing.Color]::Empty; # siehe KeepAspectRatio
 
@@ -46,6 +49,7 @@ $strExiftoolPath = "../Tools/exiftool.exe";
 
 $strExifTemplatePath = "../Vorlagen/canon.jpg";
 
+$bolAutoRotate = $true;
 $bolKeepAspectRatio = $true;
 $clrCanvasColor = [System.Drawing.Color]::Black;
 
@@ -79,6 +83,7 @@ $strTempFolderPath = "./tmp-" + $(new-object "System.Random").Next(1000,10000);
 "Breite:                       " + $intWidth;
 "Höhe:                         " + $intHeight;
 "Seitenverhältnis beibehalten: " + $bolKeepAspectRatio;
+"Autorotate verwenden:         " + $bolAutoRotate;
 "Randfarbe:                    " + $clrCanvasColor;
 "";
 "Jpeg-Qualität:                " + $intJpegQuality;

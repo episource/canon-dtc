@@ -1,7 +1,10 @@
-Version 1.0.3
+Version 1.0.4 [17.09.2007]:
+	- Der Parameter -FirstImageNumber (--FirstImageNumber) wurde hinzugefügt. Er ermöglicht das Festlegung des Anfangswertes bei automatischer Bennenung der Ausgabedateien.
+
+Version 1.0.3 [20.06.2007]:
 	- Der Parameter -NoUpscale (--NoUpscale) wird nun korrekt eingelesen (die Funktion kann nun auch deaktiviert werden)
 
-Version 1.0.2
+Version 1.0.2 [18.06.2007]:
 	- Das Arbeitsverzeichnis muss nicht mehr der Ordner sein, in dem auch das Skript liegt
 	- Parameter -format (--format) in -size (--size) umbenannt
 	- AutoSize-Funktion hinzugefügt
@@ -9,9 +12,9 @@ Version 1.0.2
 	- Parameter -NoUpscale (--NoUpscale) hinzugefügt
 	- Hilfetext aktualisiert
 
-Version 1.0.1:
+Version 1.0.1 [08.06.2007]:
 	- Unterstützung für die AutoRotate-Funktion der Canon-Kameras hinzugefügt.
 	- Die ParseArguments-Methode verwendet nun die Switch-Syntax
 
-Version 1.0.0:
+Version 1.0.0 [12.05.2007]:
 	- Ursprüngliche Version.

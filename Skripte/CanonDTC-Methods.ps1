@@ -329,6 +329,25 @@ function ParseArguments([array]$arguments)
 				$i = $arrValue[1];
 			}
 			
+			"firstimagenumber"
+			{
+				$i++;
+				
+				if ($i -ge $arguments.length)
+				{
+					throw ("Dem Parameter " + $arguments[$i -1] + " muss ein numerischer Wert größer 1 folgen.");
+				}
+				
+				[int]$intImgNumber = 1;
+				
+				if ( (-not [Int32]::TryParse($arguments[$i], [ref] $intImgNumber)) -or ($intImgNumber -lt 1) )
+				{
+					throw ("Kein numerischer Wert größer 1: " + $arguments[$i]);
+				}
+				
+				$script:intFirstImageNumber = $intImgNumber;
+			}
+			
 			"autorotate"
 			{
 				[array]$arrValue = ParseBooleanArgumentValue;

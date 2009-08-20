@@ -26,6 +26,7 @@ set-psdebug -strict
 [string]$script:strTargetFolderPath = "";		# Zielverzeichnis
 
 [bool]$script:bolRename = $false;						# Dateien nach dem Schema img_#### umbennen
+[int]$script:intFirstImageNumber = 1;				# Wenn die Ausgabedateien nach dem Schema img_#### benannt werden, gibt dieser wert die Nummer des ersten Bildes an
 
 [string]$script:strExiftoolPath = "";				# Pfad zu ExifTool von Phil Harvey (EXE)
 
@@ -52,6 +53,7 @@ $strSourceFolderPath = $strBaseDir + "/../Source/";
 $strTargetFolderPath = $strBaseDir + "/../Target/";
 
 $bolRename = $false;
+$intFirstImageNumber = 1;
 
 $strExiftoolPath = $strBaseDir + "/../Tools/exiftool.exe";
 
@@ -124,6 +126,7 @@ $strSupportedSizes;
 "Temporäres Verzeichnis:       " + $strTempFolderPath.Replace("\", "/");
 "";
 "Dateinamen anpassen:          " + $bolRename;
+"Nummer des ersten Bildes:     " + $intFirstImageNumber;
 "";
 "Exiftool:                     " + $strExiftoolPath.Replace("\", "/");
 "";
@@ -150,7 +153,7 @@ else
 
 		if ($bolRename -eq $true)
 		{
-			$strNewFileName = "img_" + ($i + 1).ToString("D4");
+			$strNewFileName = "img_" + ($i + $intFirstImageNumber).ToString("D4");
 
 			write-host -noNewLine $(" -> " + $strNewFileName + ".jpg");
 		}

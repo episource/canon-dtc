@@ -1,11 +1,46 @@
 #
+#	ParseBooleanArgumentValue
+#		Liest den boolschen Wert eines Arguments ein. Lieft den entsprechenden Wert und den neuen Index im $arguments-Array.
+#		!!! Nicht gerade elegant programmiert !!!
+#
+
+function ParseBooleanArgumentValue()
+{
+	[bool]$bolReturnValue = $false;
+
+	if ( ($i + 1 -ge $arguments.Length) -or (($arguments[$i + 1].Length -gt 1) -and $arguments[$i + 1].StartsWith("-")) )
+	{
+		$bolReturnValue = $true;
+	}
+	else
+	{
+		$i++;
+
+		if ( ($arguments[$i] -eq "0") -or ($arguments[$i] -eq "false") )
+		{
+			$bolReturnValue = $false;
+		}
+		elseif ( ($arguments[$i] -eq "1") -or ($arguments[$i] -eq "true") )
+		{
+			$bolReturnValue = $true;
+		}
+		else
+		{
+			$i--;
+		}
+	}
+	
+	return $($bolReturnValue, $i);
+}
+
+#
 # ParseArguments
 #		Liest die Argumente ein.
 #
 
 function ParseArguments([array]$arguments)
 {
-	[int]$i = 0;
+	[int]$:i = 0;
 
 	while ($i -lt $arguments.length)
 	{
@@ -30,7 +65,7 @@ function ParseArguments([array]$arguments)
 				"";
 
 				# Hilfetext laden und zeilenweise ausgeben. Zulange Zeilen werden in der nächsten Zeile mit gleichbleibender Einrückung ausgegeben.
-				$srHelp = new-object "System.IO.StreamReader" "./CanonDTC-Help.txt";
+				$srHelp = new-object "System.IO.StreamReader" $( $strBaseDir + "/CanonDTC-Help.txt" );
 
 				[string]$strLine = $();
 				[int]$intLineLength = [System.Console]::BufferWidth - 1;
@@ -158,28 +193,63 @@ function ParseArguments([array]$arguments)
 				$script:strExifTemplatePath = $arguments[$i];
 			}
 			
-			"format"
+			"size"
 			{
 				$i++;
-	
+
 				if ($i -ge $arguments.length)
 				{
 					throw ("Dem Parameter " + $arguments[$i -1] + " muss eine Formatangabe folgen!");
 				}
-	
-				$arrFormat = $arguments[$i].Split("xX");
-	
-				if ( -not ( ($arrFormat.Length -eq 2) -and [Int32]::TryParse($arrFormat[0], [ref] $intWidth) -and [Int32]::TryParse($arrFormat[1], [ref] $intHeight) ) )
+
+				$intWidth = 0;
+				$intHeight = 0;
+
+				$szSize = [System.Drawing.Size]::Empty;
+
+				$arrSize = $arguments[$i].Split("xX");
+
+				if ( -not ( ($arrSize.Length -eq 2) -and [Int32]::TryParse($arrSize[0], [ref] $intWidth) -and [Int32]::TryParse($arrSize[1], [ref] $intHeight) ) )
 				{
 					throw ($arguments[$i] + " ist keine gültige Formatangabe.");
 				}
-	
-				if ( -not ( ($intWidth -eq 640 -and $intHeight -eq 480) -or ($intWidth -eq 1600 -and $intHeight -eq 1200) -or ($intWidth -eq 2048 -and $intHeight -eq 1536) -or ($intWidth -eq 2592 -and $intHeight -eq 1944) -or ($intWidth -eq 3072 -and $intHeight -eq 2304) ) )
+				
+				if ( ($intWidth -gt 0) -and ($intHeight -gt 0) )
 				{
-					throw ($arguments[$i] + " wird nicht unterstützt. Es sind nur die Modi 640x480, 1600x1200, 2048x1536, 2592x1944 und 3072x2304 möglich!");
+					$szSize = new-object "System.Drawing.Size" $($intWidth, $intHeight);
+				}
+
+				if ( [System.Array]::IndexOf($arrSupportedSizes, $szSize) -eq -1 )
+				{
+					$bolFirst = $true;
+					$strSupportedSizes = "";
+
+					foreach($szSize in $arrSupportedSizes)
+					{
+						if (-not $bolFirst)
+						{
+							$strSupportedSizes += ", ";
+						}
+						else
+						{
+							$bolFirst = $false;
+						}
+					
+						$strSupportedSizes += $szSize.Width.ToString() + "x" + $szSize.Height.ToString();
+					}
+
+					throw ($arguments[$i] + " wird nicht unterstützt. Es sind nur die Modi " + $strSupportedSizes + "  möglich!");
 				}
 			}
 			
+			"autosize"
+			{
+				[array]$arrValue = ParseBooleanArgumentValue;
+				
+				$script:bolAutoSize = $arrValue[0];
+				$i = $arrValue[1];
+			}
+
 			"canvas"
 			{
 				$i++;
@@ -245,52 +315,18 @@ function ParseArguments([array]$arguments)
 			
 			"rename"
 			{
-				if ( ($i + 1 -ge $arguments.Length) -or (($arguments[$i + 1].Length -gt 1) -and $arguments[$i + 1].StartsWith("-")) )
-				{
-					$script:bolRename = $true;
-				}
-				else
-				{
-					$i++;
-	
-					if ( ($arguments[$i] -eq "0") -or ($arguments[$i] -eq "false") )
-					{
-						$script:bolRename = $false;
-					}
-					elseif ( ($arguments[$i] -eq "1") -or ($arguments[$i] -eq "true") )
-					{
-						$script:bolRename = $true;
-					}
-					else
-					{
-						$i--;
-					}
-				}
+				[array]$arrValue = ParseBooleanArgumentValue;
+
+				$script:bolRename = $arrValue[0];
+				$i = $arrValue[1];
 			}
 			
 			"autorotate"
 			{
-				if ( ($i + 1 -ge $arguments.Length) -or (($arguments[$i + 1].Length -gt 1) -and $arguments[$i + 1].StartsWith("-")) )
-				{
-					$script:bolAutoRotate = $true;
-				}
-				else
-				{
-					$i++;
-	
-					if ( ($arguments[$i] -eq "0") -or ($arguments[$i] -eq "false") )
-					{
-						$script:bolAutoRotate = $false;
-					}
-					elseif ( ($arguments[$i] -eq "1") -or ($arguments[$i] -eq "true") )
-					{
-						$script:bolAutoRotate = $true;
-					}
-					else
-					{
-						$i--;
-					}
-				}
+				[array]$arrValue = ParseBooleanArgumentValue;
+
+				$script:bolAutoRotate = $arrValue[0];
+				$i = $arrValue[1];
 			}
 	
 			default
@@ -328,6 +364,90 @@ function ValidatePaths()
 }
 
 #
+#	GetNewSize
+#		Bestimmt das zu verwendende Zielformat. Wenn der Befehlszeilenschlater -autosize (--autosize)
+#		angegeben wurde, wird das Format automatisch bestimmt. Die mit dem Argument -size (--size) angegebenen
+#		Abmessungen bestimmen in diesem Fall das größte zu verwendende Bildformat. Bei Angabe von -noupscale (--noupscale)
+#		werden Bilder nur heraufskaliert, wenn sie die kleinstmöglichen Bildabmessungen unterschreiten. Wenn -autosize
+#		(--autosize) nicht angegeben wurde, verliert -noupscale (--noupscale) seine Wirkung und das mit -size
+#		(--size) angegebene Format wird erzwungen.
+#
+
+function GetNewSize([System.Drawing.Image]$imgImage)
+{
+	[System.Drawing.Size]$szNewSize = [System.Drawing.Size]::Empty;
+
+	if ( -not $bolAutoSize )
+	{
+		return $szTargetSize;
+	}
+
+	$intImgWidth = $imgImage.Width;
+	$intImgHeight = $imgImage.Height;
+
+	if ($bolAutoRotate -and ($imgImage.Height -gt $imgImage.Width))
+	{
+		$intImgWidth = $imgImage.Height;
+		$intImgHeight = $imgImage.Width;
+	}
+
+	$intLowestDiffIndex = -1;
+	$intHighestNegativeDiffIndex = -1;
+	$intLowestDiff = [System.Int32]::MaxValue;
+	$intHighestNegativeDiff = [System.Int32]::MaxValue;
+
+	for($i = 0; $i -lt $arrSupportedSizes.Length; $i++)
+	{
+  	$szSupportedSize = $arrSupportedSizes[$i];
+  	
+  	if ( ($szSupportedSize.Width -gt $szTargetSize.Width) -or ($szSupportedSize.Height -gt $szTargetSize.Height) )
+  	{
+  		continue;
+  	}
+
+		if ( $( $imgImage.Width - $szSupportedSize.Width ) -ge $( $imgImage.Height - $szSupportedSize.Height ) )
+		{
+			$intFirstValue = $imgImage.Width;
+			$intSecondValue = $szSupportedSize.Width;
+		}
+		else
+		{
+			$intFirstValue = $imgImage.Height;
+			$intSecondValue = $szSupportedSize.Height;
+		}
+
+		$intDiff = $intFirstValue - $intSecondValue;
+		$intAbsDiff = [System.Math]::Abs($intDiff);
+
+		if ($intAbsDiff -lt $intLowestDiff)
+		{
+			if ( ($intDiff -lt 0) -and $bolNoUpscale )
+			{
+				if ($intAbsDiff -lt $intHighestNegativeDiff)
+				{
+					$intHighestNegativeDiff = $intAbsDiff;
+					$intHighestNegativeDiffIndex = $i;
+				}
+			}
+			else
+			{
+				$intLowestDiff = $intAbsDiff;
+				$intLowestDiffIndex = $i;
+			}
+		}
+	}
+	
+	$intIndex = $intLowestDiffIndex;
+	
+	if ($intIndex -lt 0)
+	{
+		$intIndex = $intHighestNegativeDiffIndex;
+	}
+	
+	return $arrSupportedSizes[$intIndex];
+}
+
+#
 #	Scale
 #		Skaliert eine gegebene Image-Instanz entsprechend den gewünschten Werten.
 #		Gibt ein [System.Drawing.Image]-Objekt zurück. Wenn das Bild höher als breit ist, wird es um 90°
@@ -337,7 +457,12 @@ function ValidatePaths()
 
 function Scale()
 {
-	Param ( [System.Drawing.Image]$imgImage, [int]$intNewWidth = $intWidth, [int]$intNewHeight = $intHeight, [int]$intDpi = 0 );
+	Param ( [System.Drawing.Image]$imgImage, [System.Drawing.Size]$szNewSize = [System.Drawing.Size]::Empty, [int]$intDpi = 0 );
+
+	if ( $szNewSize -eq [System.Drawing.Size]::Empty )
+	{
+		$szNewSize = GetNewSize $imgImage;
+	}
 
 	# Bild bei Bedarf drehen
 	if ($bolAutoRotate -and ($imgImage.Height -gt $imgImage.Width))
@@ -374,26 +499,26 @@ function Scale()
 
 	if ($bolKeepAspectRatio -eq $false)
 	{
-		$intScaleWidth = $intNewWidth;
-		$intScaleHeight = $intNewHeight;
+		$intScaleWidth = $szNewSize.Width;
+		$intScaleHeight = $szNewSize.Height;
 	}
-	elseif ($( $imgImage.Width - $intNewWidth ) -ge $( $imgImage.Height - $intNewHeight ))
+	elseif ($( $imgImage.Width - $szNewSize.Width ) -ge $( $imgImage.Height - $szNewSize.Height ))
 	{
-		$intScaleWidth = $intNewWidth;
+		$intScaleWidth = $szNewSize.Width;
 		$intScaleHeight = [Math]::Round( $intScaleWidth * ( $imgImage.Height / $imgImage.Width ) , 0 );
 
 		# Bild füllt die Breite vollständig aus, muss aber vertikal zentriert werden
 		$intX = 0;
-		$intY = [Math]::Ceiling( ( $intNewHeight - $intScaleHeight ) / 2 );
+		$intY = [Math]::Ceiling( ( $szNewSize.Height - $intScaleHeight ) / 2 );
 	}
 	else
 	{
-		$intScaleHeight = $intNewHeight
+		$intScaleHeight = $szNewSize.Height;
 		$intScaleWidth = [Math]::Round( $intScaleHeight * ( $imgImage.Width / $imgImage.Height ) , 0 );
 
 		# Bild füllt die Höhe vollständig aus, muss aber horizontal zentriert werden
 		$intY = 0;
-		$intX = [Math]::Ceiling( ( $intNewWidth - $intScaleWidth ) / 2 );
+		$intX = [Math]::Ceiling( ( $szNewSize.Width - $intScaleWidth ) / 2 );
 	}
 
 
@@ -403,7 +528,7 @@ function Scale()
 
 	trap
 	{
-		if ($grImage -ne $())
+  if ($grImage -ne $())
 		{
 			$grImage.Dispose();
 		}
@@ -417,7 +542,7 @@ function Scale()
 	}
 
 	# Erzeuge Graphics-Objekt auf Basis eines Bitmaps
-	$bmpBaseImage = new-object "System.Drawing.Bitmap" $($intNewWidth, $intNewheight, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb);
+	$bmpBaseImage = new-object "System.Drawing.Bitmap" $($szNewSize.Width, $szNewSize.Height, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb);
 	$bmpBaseImage.SetResolution($intHDpi, $intVDpi);
 
 	$grImage = [System.Drawing.Graphics]::FromImage($bmpBaseImage);
@@ -505,7 +630,7 @@ function CreateThumbnail([string]$strSourceImagePath, [string]$strNewFileName)
 	}
 
 	$imgImage = [System.Drawing.Image]::FromFile($strSourceImagePath);
-	$imgThumbnail = Scale $imgImage 160 120 180;
+	$imgThumbnail = Scale $imgImage $(new-object "System.Drawing.Size" $(160, 120)) 180;
 
 	SaveAsJpeg $imgThumbnail $([System.IO.Path]::Combine($strTempFolderPath, $strNewFileName + "-thumb"));
 

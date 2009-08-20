@@ -9,6 +9,10 @@ set-psdebug -strict
 
 # Verwendete Variabeln
 
+[string]$script:strBaseDir = "";						# Basisverzeichnis des Skripts (darin liegen die Skriptdateien)
+
+[System.Drawing.Size[]]$script:arrSupportedSizes = $();	# Unterstützte Bildformate
+
 [string]$script:strTempFolderPath = "";			# temporäres Verzeichnis; wird automatisch angelegt und gelöscht
 
 [bool]$script:bolRotated = $false;					# Gibt an, ob das Bild beim letzten Skalierungsvorgang gedreht wurde (siehe Scale-Methode). In diesem Fall muss die AutoRotate-Funktion der Kamera aktiviert werden.
@@ -16,8 +20,7 @@ set-psdebug -strict
 
 # Verwendete Parameter-Variabeln
 
-[int]$script:intWidth = 0;									# gewünschte Breite
-[int]$script:intHeight = 0;									# gewünschte Höhe
+[System.Drawing.Size]$script:szTargetSize = [System.Drawing.Size]::Empty;	# gewünschtes Bildformat
 
 [string]$script:strSourceFolderPath = "";		# Quellverzeichnis
 [string]$script:strTargetFolderPath = "";		# Zielverzeichnis
@@ -28,7 +31,9 @@ set-psdebug -strict
 
 [string]$script:strExifTemplatePath = "";		# Pfad zu der Exif-Daten-Vorlage
 
-[bool]$script:bolAutoRotate = $true					# Bestimmt ob die AutoRotate-Funktion der Kamera zum Darstellen von Hochformatbildern genutzt werden soll
+[bool]$script:bolAutoSize = $false;					# Bestimmt, ob das Zielformat automatisch bestimmt werden soll. Siehe auch GetNewSize([...]).
+[bool]$script:bolNoUpscale = $false;					# Bestimmt, ob Bilder auch hochskaliert werden dürfen.
+[bool]$script:bolAutoRotate = $false;				# Bestimmt ob die AutoRotate-Funktion der Kamera zum Darstellen von Hochformatbildern genutzt werden soll
 [bool]$script:bolKeepAspectRatio = $false;	# Legt fest, ob das Seitenverhältnis des ursprünglichen Bildes beibehalten wird. Auftretende Ränder werden mit der Farbe CanvasColor gefüllt. Die Farbangabe erfolgt entweder als Name aus der KnownColors Enumeration oder nach dem Schema #RRGGBB.
 [System.Drawing.Color]$Script:clrCanvasColor = [System.Drawing.Color]::Empty; # siehe KeepAspectRatio
 
@@ -37,18 +42,23 @@ set-psdebug -strict
 
 # Voreinstellungen
 
-$intWidth = 1600;
-$intHeight = 1200;
+$strBaseDir = $(split-path -parent $MyInvocation.MyCommand.Path);
 
-$strSourceFolderPath = "../Source/";
-$strTargetFolderPath = "../Target/";
+$arrSupportedSizes = $(new-object "System.Drawing.Size" $(640, 480)), $(new-object "System.Drawing.Size" $(1600, 1200)), $(new-object "System.Drawing.Size" $(2048, 1536)), $(new-object "System.Drawing.Size" $(2592, 1944)), $(new-object "System.Drawing.Size" $(3072, 2304));
+
+$szTargetSize = new-object "System.Drawing.Size" $(1600, 1200);
+
+$strSourceFolderPath = $strBaseDir + "/../Source/";
+$strTargetFolderPath = $strBaseDir + "/../Target/";
 
 $bolRename = $false;
 
-$strExiftoolPath = "../Tools/exiftool.exe";
+$strExiftoolPath = $strBaseDir + "/../Tools/exiftool.exe";
 
-$strExifTemplatePath = "../Vorlagen/canon.jpg";
+$strExifTemplatePath = $strBaseDir + "/../Vorlagen/canon.jpg";
 
+$bolAutoSize = $false;
+$bolNoUpscale = $true;
 $bolAutoRotate = $true;
 $bolKeepAspectRatio = $true;
 $clrCanvasColor = [System.Drawing.Color]::Black;
@@ -58,7 +68,7 @@ $intJpegQuality = 85;
 
 # Methoden einbinden
 
-. ./CanonDTC-Methods.ps1
+. ($strBaseDir + "/CanonDTC-Methods.ps1");
 
 
 #
@@ -75,13 +85,34 @@ ParseArguments $args;
 ValidatePaths;
 
 # temporäres Verzeichnis mit zufälligem Namen erzeugen
-$strTempFolderPath = "./tmp-" + $(new-object "System.Random").Next(1000,10000);
+$strTempFolderPath = $strBaseDir + "/tmp-" + $(new-object "System.Random").Next(1000,10000);
 [void] [System.IO.Directory]::CreateDirectory($strTempFolderPath);
 
 #Einstellungen ausgeben:
 "";
-"Breite:                       " + $intWidth;
-"Höhe:                         " + $intHeight;
+
+$strSupportedSizes = "Unterstützte Zielformate:     ";
+$bolFirst = $true;
+
+foreach($szSize in $arrSupportedSizes)
+{
+	if (-not $bolFirst)
+	{
+		$strSupportedSizes += ", ";
+	}
+	else
+	{
+		$bolFirst = $false;
+	}
+
+	$strSupportedSizes += $szSize.Width.ToString() + "x" + $szSize.Height.ToString();
+}
+
+"";
+$strSupportedSizes;
+"Zielformat                    " + $szTargetSize.Width + "x" + $szTargetSize.Height;
+"Format automatisch bestimmen: " + $bolAutoSize;
+"Bilder nicht hochskalieren:   " + $bolNoUpscale;
 "Seitenverhältnis beibehalten: " + $bolKeepAspectRatio;
 "Autorotate verwenden:         " + $bolAutoRotate;
 "Randfarbe:                    " + $clrCanvasColor;
